@@ -8,9 +8,19 @@ export interface Sample {
 	b: number
 }
 
+/** Счётчик превышений пользователя: сколько раз, когда первое и последнее. */
+export interface Strike {
+	count: number
+	/** С первого предупреждения идёт отсчёт до обнуления. */
+	firstAt: number
+	lastAt: number
+}
+
 interface StateFileV1 {
 	version: 1
 	users: Record<string, Sample[]>
+	/** Появилось вместе с предупреждениями; в старых файлах его нет. */
+	strikes?: Record<string, Strike>
 }
 
 const EMPTY_STATE: StateFileV1 = { version: 1, users: {} }
@@ -55,6 +65,31 @@ export class StateStore {
 			}
 		}
 		this.state = { version: 1, users: {} }
+	}
+
+	getStrike(userId: number): Strike | undefined {
+		return this.state.strikes?.[String(userId)]
+	}
+
+	setStrike(userId: number, strike: Strike): void {
+		this.state.strikes ??= {}
+		this.state.strikes[String(userId)] = strike
+	}
+
+	clearStrike(userId: number): void {
+		delete this.state.strikes?.[String(userId)]
+	}
+
+	/** Забывает счётчики, у которых с первого предупреждения прошло больше maxAgeMs. */
+	pruneOldStrikes(maxAgeMs: number, now: number): void {
+		for (const [key, strike] of Object.entries(this.state.strikes ?? {})) {
+			if (now - strike.firstAt > maxAgeMs) delete this.state.strikes![key]
+		}
+	}
+
+	/** Убирает историю трафика пользователя (неактивных не храним — меньше файл). */
+	forgetUser(userId: number): void {
+		delete this.state.users[String(userId)]
 	}
 
 	getSamples(userId: number): Sample[] {

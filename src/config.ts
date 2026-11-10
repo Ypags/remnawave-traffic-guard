@@ -42,12 +42,21 @@ export interface Config {
 	/** Сколько пользователей запрашивать за одну страницу (max 1000 у Remnawave). */
 	pageSize: number
 
+	/** Сколько предупреждений до блокировки (следующее превышение — блок). */
+	warningsBeforeBlock: number
+	/** Через сколько после первого предупреждения счётчик обнуляется, мс. */
+	strikeResetMs: number
+	/** Дней от первого предупреждения до обнуления (для текста сообщений). */
+	strikeResetDays: number
+	/** Ссылка на поддержку для кнопки в сообщении о блокировке. */
+	supportUrl: string
+
 	/** Предохранитель: абсолютное количество кандидатов на отключение за проход. */
 	circuitBreakerMaxUsers: number
 	/** Предохранитель: доля (%) кандидатов от числа просканированных активных пользователей. */
 	circuitBreakerMaxPercent: number
 
-	/** Токен Telegram-бота для алертов. */
+	/** Токен основного бота: им шлём карточки пользователям и алерты админу. */
 	telegramBotToken?: string
 	/** chat_id администратора/группы, куда слать алерты. */
 	telegramChatId?: string
@@ -59,7 +68,8 @@ export interface Config {
 }
 
 export const loadConfig = (): Config => {
-	const trafficLimitGb = envNumber('TRAFFIC_LIMIT_GB', 100)
+	const trafficLimitGb = envNumber('TRAFFIC_LIMIT_GB', 50)
+	const strikeResetDays = envNumber('STRIKE_RESET_DAYS', 30)
 	const windowMinutes = envNumber('WINDOW_MINUTES', 60)
 	const pollIntervalSeconds = envNumber('POLL_INTERVAL_SECONDS', 300)
 
@@ -74,6 +84,11 @@ export const loadConfig = (): Config => {
 		windowMs: windowMinutes * 60_000,
 		pollIntervalMs: pollIntervalSeconds * 1_000,
 		pageSize: envNumber('PAGE_SIZE', 1000),
+
+		warningsBeforeBlock: envNumber('WARNINGS_BEFORE_BLOCK', 3),
+		strikeResetMs: strikeResetDays * 24 * 60 * 60 * 1000,
+		strikeResetDays,
+		supportUrl: optionalEnv('SUPPORT_URL', 'https://t.me/GraniVPNSupport'),
 
 		circuitBreakerMaxUsers: envNumber('CIRCUIT_BREAKER_MAX_USERS', 5),
 		circuitBreakerMaxPercent: envNumber('CIRCUIT_BREAKER_MAX_PERCENT', 10),

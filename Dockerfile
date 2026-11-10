@@ -7,7 +7,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-# Финальный образ: без runtime-зависимостей, только скомпилированный JS + Node.
+# Финальный образ: скомпилированный JS + resvg (рисует карточки) + шрифты.
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
@@ -15,7 +15,9 @@ ENV NODE_ENV=production
 # su-exec — чтобы после chown тома переключиться с root на node.
 RUN apk add --no-cache su-exec
 
-COPY package.json ./
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY assets ./assets
 COPY --from=builder /app/dist ./dist
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 

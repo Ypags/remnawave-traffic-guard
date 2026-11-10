@@ -30,7 +30,21 @@ export interface RemnawaveUser {
 		lifetimeUsedTrafficBytes: number
 		onlineAt: string | null
 		firstConnectedAt: string | null
+		lastConnectedNodeUuid?: string | null
 	}
+}
+
+export interface RemnawaveNode {
+	uuid: string
+	name: string
+	countryCode: string
+}
+
+export interface RemnawaveHwidDevice {
+	platform: string | null
+	osVersion: string | null
+	deviceModel: string | null
+	userAgent: string | null
 }
 
 interface GetUsersResponse {
@@ -136,6 +150,18 @@ export class RemnawaveClient {
 			method: 'POST',
 		})
 		return data.response
+	}
+
+	/** GET /api/nodes — для названия страны сервера в карточке. */
+	async getNodes(): Promise<RemnawaveNode[]> {
+		const data = await this.request<{ response: RemnawaveNode[] }>('/api/nodes')
+		return data.response
+	}
+
+	/** GET /api/hwid/devices/{userId} — устройства пользователя для карточки. */
+	async getHwidDevices(userId: number): Promise<RemnawaveHwidDevice[]> {
+		const data = await this.request<{ response: { devices: RemnawaveHwidDevice[] } }>(`/api/hwid/devices/${userId}`)
+		return data.response.devices
 	}
 
 	/** GET /api/users/{userId} — для утилиты unblock, чтобы показать текущий статус. */

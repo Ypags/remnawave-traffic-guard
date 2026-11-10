@@ -8,11 +8,15 @@ import { dirname } from 'node:path'
  */
 export interface ActionLogEntry {
 	t: string // ISO-время
-	action: 'disable' | 'enable' | 'circuit-breaker'
+	action: 'warning' | 'disable' | 'enable' | 'circuit-breaker'
 	userId?: number
 	username?: string
 	telegramId?: number | null
 	incrementBytes?: number
+	/** Номер превышения (1, 2 — предупреждения, 3 — блокировка). */
+	strike?: number
+	/** Ошибка доставки сообщения пользователю, если была. */
+	notifyError?: string
 	reason?: string
 }
 
