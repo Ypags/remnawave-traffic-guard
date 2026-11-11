@@ -123,13 +123,16 @@ export class TrafficGuard {
 		let scannedTotal = 0
 
 		try {
-			for await (const page of this.client.iterateAllUsers(this.config.pageSize)) {
+			// Просим у панели только активных: остальных правило не касается.
+			// Кто перестал быть активным, просто пропадает из выгрузки — его историю
+			// уберёт pruneStaleUsers через STALE_USER_MAX_AGE_MS.
+			for await (const page of this.client.iterateAllUsers(this.config.pageSize, 'ACTIVE')) {
 				for (const user of page) {
 					scannedTotal++
 					const bytes = user.userTraffic.lifetimeUsedTrafficBytes
 
-					// Историю храним только активным: из ~56 тыс. пользователей активны
-					// ~3,5 тыс., иначе файл состояния раздувается в 15 раз.
+					// Страховка, если панель проигнорирует фильтр: историю храним только
+					// активным, иначе файл состояния раздувается в 15 раз.
 					if (user.status !== 'ACTIVE') {
 						this.store.forgetUser(user.id)
 						continue
